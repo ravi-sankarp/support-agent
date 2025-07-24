@@ -7,7 +7,7 @@ Pure UI layer - no business logic
 import streamlit as st
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 # Load environment variables
@@ -18,6 +18,14 @@ except ImportError:
     pass
 
 from agent import SolidWorksAgentCore
+from dtx_helper import DtxHelper
+import asyncio
+
+# Global DTX helper instance to reuse tokens
+try:
+    dtx_helper = DtxHelper()
+except Exception:
+    dtx_helper = None
 
 
 def initialize_session_state():
@@ -27,6 +35,12 @@ def initialize_session_state():
     
     if "current_session_data" not in st.session_state:
         st.session_state.current_session_data = None
+    
+    if "feedback_submitting" not in st.session_state:
+        st.session_state.feedback_submitting = False
+    
+    if "feedback_success" not in st.session_state:
+        st.session_state.feedback_success = False
 
 
 def get_api_key() -> Optional[str]:
@@ -59,6 +73,57 @@ def save_agent_sessions(agent: SolidWorksAgentCore):
     """Save current agent session to Streamlit session state"""
     if st.session_state.session_id in agent.sessions:
         st.session_state.current_session_data = agent.sessions[st.session_state.session_id]
+
+
+@st.dialog("💬 Give Feedback")
+def feedback_modal():
+    """Render feedback modal with form"""
+    st.write("We'd love to hear your feedback about the SolidWorks Support Agent!")
+    
+    with st.form("feedback_form"):
+        email = st.text_input("Email *", placeholder="your.email@company.com")
+        positives = st.text_area("What did you like? *", placeholder="Tell us what worked well...")
+        improvements = st.text_area("What could be improved? *", placeholder="Tell us what could be better...")
+        
+        submitted = st.form_submit_button("Submit Feedback", use_container_width=True, disabled=st.session_state.feedback_submitting)
+        
+        if submitted and not st.session_state.feedback_submitting:
+            # Validate all fields are filled
+            if not email.strip():
+                st.error("Email is required.")
+                return
+            if not positives.strip():
+                st.error("Please tell us what you liked.")
+                return
+            if not improvements.strip():
+                st.error("Please tell us what could be improved.")
+                return
+                
+            # Set submitting state to prevent double-click
+            st.session_state.feedback_submitting = True
+            
+            try:
+                # Check if DTX helper is available
+                if dtx_helper is None:
+                    st.error("❌ DTX service is not configured. Please check environment variables.")
+                    st.info("Required: DTX_BASE_URL, DTX_LOGIN_EMAIL, DTX_LOGIN_PASSWORD, DTX_TENANT_ID")
+                    st.session_state.feedback_submitting = False
+                    return
+                
+                # Submit feedback using global DTX helper
+                with st.spinner("Submitting feedback..."):
+                    result = asyncio.run(dtx_helper.create_feedback_form(email, positives, improvements))
+                
+                # Set success state and trigger modal close
+                st.session_state.feedback_success = True
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"❌ Sorry, there was an error submitting your feedback: {str(e)}")
+                st.info("Please try again later or contact support directly.")
+            finally:
+                # Reset submitting state
+                st.session_state.feedback_submitting = False
 
 
 def render_api_key_missing():
@@ -139,6 +204,14 @@ def render_sidebar(agent: SolidWorksAgentCore):
         agent.clear_session(st.session_state.session_id)
         save_agent_sessions(agent)
         st.rerun()
+    
+    if st.sidebar.button("💬 Give Feedback", help="Share your feedback with us", use_container_width=True):
+        feedback_modal()
+    
+    # Show success message after feedback submission
+    if st.session_state.feedback_success:
+        st.sidebar.success("✅ Thank you for your feedback!")
+        st.session_state.feedback_success = False
     
     # Help section
     with st.sidebar.expander("❓ Help", expanded=False):
