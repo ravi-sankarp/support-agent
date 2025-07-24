@@ -19,8 +19,6 @@ flake8 = "^6.0.0"
 mypy = "^1.0.0"
 
 [tool.poetry.scripts]
-solidworks-agent = "src.solidworks_agent_executor:main"
-solidworks-streamlit = "src.run_streamlit:main"
 
 [build-system]
 requires = ["poetry-core"]
