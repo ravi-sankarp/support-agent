@@ -4,7 +4,7 @@ version = "2.0.0"
 description = "AI-powered SolidWorks support agent using Perplexity API for real-time technical assistance"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = [{include = "solidworks_agent"}]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
