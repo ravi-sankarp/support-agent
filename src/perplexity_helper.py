@@ -5,6 +5,7 @@ Handles all Perplexity API interactions and prompt formatting.
 """
 
 import requests
+import re
 from typing import List, Dict, Tuple
 
 class PerplexityHelper:
@@ -167,14 +168,25 @@ class PerplexityHelper:
             
             result = response.json()
             assistant_message = result["choices"][0]["message"]["content"]
-            
             # Extract and format citations if available
             citations = result.get("citations", [])
             if citations:
+                # Replace inline citation markers with clickable links
+                citation_pattern = r'\[(\d+)\]'
+                
+                def replace_citation(match):
+                    citation_num = int(match.group(1))
+                    if citation_num <= len(citations):
+                        url = citations[citation_num - 1]
+                        return f'[[{citation_num}]]({url})'
+                    return match.group(0)
+                
+                assistant_message = re.sub(citation_pattern, replace_citation, assistant_message)
+                
+                # Add sources section at the end
                 assistant_message += "\n\n## Sources\n"
                 for i, url in enumerate(citations, 1):
                     assistant_message += f"{i}. {url}\n"
-            
             return assistant_message, True
             
         except requests.exceptions.HTTPError as e:
