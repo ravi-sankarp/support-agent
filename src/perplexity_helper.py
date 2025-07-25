@@ -50,11 +50,10 @@ class PerplexityHelper:
 - Always ask for: SolidWorks version, specific error messages, exact steps that lead to the problem, system specs if relevant
 
 **Response Format - MANDATORY:**
-- Structure responses with clear markdown headings, links and numbered steps
+- Structure responses with clear markdown headings and numbered steps
 - Include specific SolidWorks terminology and version details
 - Provide step-by-step solutions with exact menu paths
 - Use code blocks for settings, file paths, or registry entries
-- Include the sources you used from the summaries in the answer correctly, use markdown format (e.g. [text](link)). THIS IS A MUST
 
 **Response Tone:**
 - Professional and helpful for experienced SolidWorks users
@@ -155,6 +154,9 @@ class PerplexityHelper:
                 "cati.com",
                 "javelin-tech.com"
             ],
+            "web_search_options": {
+             "search_context_size": "medium"
+            },
             "return_related_questions": True,
             "return_citations": True
         }
@@ -165,6 +167,13 @@ class PerplexityHelper:
             
             result = response.json()
             assistant_message = result["choices"][0]["message"]["content"]
+            
+            # Extract and format citations if available
+            citations = result.get("citations", [])
+            if citations:
+                assistant_message += "\n\n## Sources\n"
+                for i, url in enumerate(citations, 1):
+                    assistant_message += f"{i}. {url}\n"
             
             return assistant_message, True
             
