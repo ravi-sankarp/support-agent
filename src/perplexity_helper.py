@@ -130,6 +130,7 @@ class PerplexityHelper:
             "role": "user", 
             "content": formatted_query
         })
+        print(self.api_key)
         # Prepare API request
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -149,6 +150,7 @@ class PerplexityHelper:
                 "forum.solidworks.com",
                 "my.solidworks.com",
                 "blogs.solidworks.com",
+                "beacon-india.com"
                 "reddit.com/r/SolidWorks",
                 "eng-tips.com",
                 "grabcad.com",

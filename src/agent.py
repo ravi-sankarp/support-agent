@@ -8,7 +8,7 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
-
+import traceback
 from perplexity_helper import PerplexityHelper
 
 
@@ -158,7 +158,7 @@ class SolidWorksAgentCore:
                     }
                 )
                 
-                
+                print(agent_response)
 
                 # Add assistant message to session if valid
                 assistant_message = ChatMessage(
@@ -171,10 +171,22 @@ class SolidWorksAgentCore:
                     }
                 )
                 session.add_message(assistant_message)
-            
+            else:
+                agent_response = AgentResponse(
+                    content=response_content,
+                    response_type=response_type,
+                    processing_time_ms=int(processing_time),
+                    model_used=self.perplexity.get_current_model(),
+                    metadata={
+                        "session_id": session_id,
+                        "message_count": session.get_user_message_count()
+                    }
+            )
             return agent_response, session
             
         except Exception as e:
+            traceback.print_exc()
+            print(e)
             # Handle errors
             error_response = AgentResponse(
                 content=f"An error occurred while processing your request: {str(e)}",
