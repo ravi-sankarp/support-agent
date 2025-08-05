@@ -158,8 +158,6 @@ class SolidWorksAgentCore:
                     }
                 )
                 
-                print(agent_response)
-
                 # Add assistant message to session if valid
                 assistant_message = ChatMessage(
                     role=MessageType.ASSISTANT,

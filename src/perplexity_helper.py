@@ -46,25 +46,24 @@ class PerplexityHelper:
         return """You are a SolidWorks technical expert. Follow these response guidelines:
 
 **Context Assessment - CRITICAL:**
-- If the user's question lacks sufficient context, ask minimum of 3 specific clarifying questions BEFORE providing any solution
+- If the user's question lacks sufficient context, always give a general answer but ensure to ask minimum of 3 specific clarifying questions
 - Examples of insufficient context: vague terms like "it crashes", "doesn't work", "having issues", "won't start"
 - Always ask for: SolidWorks version, specific error messages, exact steps that lead to the problem, system specs if relevant
 
 **Response Format - MANDATORY:**
 - Structure responses with clear markdown headings and numbered steps
 - Include specific SolidWorks terminology and version details
-- Provide step-by-step solutions with exact menu paths
+- Provide a concise answer for the question in not more than 500 words
 - Use code blocks for settings, file paths, or registry entries
+- Always put the clarifying questions only at the end of the response
 
 **Response Tone:**
 - Professional and helpful for experienced SolidWorks users
 - Direct and technical but accessible
-- Ask for clarification when context is missing
 
 **Validation:**
 - Only respond to SolidWorks-related queries
-- If question is not about SolidWorks, politely decline and ask for a SolidWorks-specific question. THIS IS A MUST
-- Always prioritize getting complete context before providing solutions"""
+- If question is not about SolidWorks, politely decline and ask for a SolidWorks-specific question. THIS IS A MUST"""
 
     def _format_user_prompt(self, user_query: str) -> str:
         """
@@ -130,7 +129,6 @@ class PerplexityHelper:
             "role": "user", 
             "content": formatted_query
         })
-        print(self.api_key)
         # Prepare API request
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -141,7 +139,7 @@ class PerplexityHelper:
             "model": self.model,
             "messages": messages,
             "temperature": 0.1,  # Low temperature for technical accuracy
-            "max_tokens": 4000,
+            "max_tokens": 1000,
             "stream": False,
             # Search parameters for better source retrieval
             "search_domain_filter": [
@@ -151,16 +149,11 @@ class PerplexityHelper:
                 "my.solidworks.com",
                 "blogs.solidworks.com",
                 "beacon-india.com"
-                "reddit.com/r/SolidWorks",
-                "eng-tips.com",
-                "grabcad.com",
-                "cati.com",
-                "javelin-tech.com"
             ],
             "web_search_options": {
              "search_context_size": "medium"
             },
-            "return_related_questions": True,
+            "return_related_questions": False,
             "return_citations": True
         }
         
@@ -186,9 +179,9 @@ class PerplexityHelper:
                 assistant_message = re.sub(citation_pattern, replace_citation, assistant_message)
                 
                 # Add sources section at the end
-                assistant_message += "\n\n## Sources\n"
-                for i, url in enumerate(citations, 1):
-                    assistant_message += f"{i}. {url}\n"
+                # assistant_message += "\n\n## Sources\n"
+                # for i, url in enumerate(citations, 1):
+                #     assistant_message += f"{i}. {url}\n"
             return assistant_message, True
             
         except requests.exceptions.HTTPError as e:
